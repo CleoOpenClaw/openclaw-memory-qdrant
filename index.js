@@ -257,6 +257,32 @@ class MemoryDB {
     const info = await this.client.getCollection(this.collectionName);
     return info.points_count || 0;
   }
+
+  async clearAll() {
+    if (this.useMemoryFallback) {
+      const count = this.memoryStore.length;
+      this.memoryStore = [];
+      this._saveToDisk();
+      return count;
+    }
+
+    await this.ensureCollection();
+    const count = await this.count();
+    await this.client.deleteCollection(this.collectionName);
+    this.initialized = false;
+    await this.ensureCollection();
+    return count;
+  }
+
+  getCategoryBreakdown() {
+    if (!this.useMemoryFallback) return null;
+    const breakdown = {};
+    for (const record of this.memoryStore) {
+      const cat = record.category || 'other';
+      breakdown[cat] = (breakdown[cat] || 0) + 1;
+    }
+    return breakdown;
+  }
 }
 
 // ============================================================================
@@ -678,12 +704,24 @@ export default function register(api) {
   api.registerCli(({ program }) => {
     const memory = program.command('memory-qdrant').description('Qdrant memory plugin commands');
 
-    memory.command('stats').description('Show statistics').action(async () => {
+    memory.command('stats').description('Show memory statistics (count, mode, categories)').action(async () => {
       const count = await db.count();
+      const mode = db.useMemoryFallback ? 'memory' : 'qdrant';
+      console.log(`Storage mode: ${mode}`);
+      if (persistPath) {
+        console.log(`Persist path: ${persistPath}`);
+      }
       console.log(`Total memories: ${count}`);
+      const breakdown = db.getCategoryBreakdown();
+      if (breakdown && Object.keys(breakdown).length > 0) {
+        console.log('Categories:');
+        for (const [cat, n] of Object.entries(breakdown).sort((a, b) => b[1] - a[1])) {
+          console.log(`  ${cat}: ${n}`);
+        }
+      }
     });
 
-    memory.command('search <query>').description('Search memories').action(async (query) => {
+    memory.command('search <query>').description('Search memories by semantic similarity').action(async (query) => {
       const vector = await embeddings.embed(query);
       const results = await db.search(vector, 5, SIMILARITY_THRESHOLDS.LOW);
       console.log(JSON.stringify(results.map(r => ({
@@ -693,6 +731,159 @@ export default function register(api) {
         score: r.score
       })), null, 2));
     });
+
+    memory.command('store <text>')
+      .description('Store a single memory from the command line')
+      .option('--category <category>', 'Memory category (fact, preference, decision, entity, other)', 'fact')
+      .option('--importance <number>', 'Importance score 0.0-1.0', '0.8')
+      .action(async (text, opts) => {
+        try {
+          const category = opts.category;
+          if (!MEMORY_CATEGORIES.includes(category)) {
+            console.error(`Error: invalid category "${category}". Must be one of: ${MEMORY_CATEGORIES.join(', ')}`);
+            process.exitCode = 1;
+            return;
+          }
+
+          const importance = parseFloat(opts.importance);
+          if (isNaN(importance) || importance < 0 || importance > 1) {
+            console.error('Error: importance must be a number between 0.0 and 1.0');
+            process.exitCode = 1;
+            return;
+          }
+
+          const cleanedText = sanitizeInput(text);
+          if (!cleanedText || cleanedText.length === 0) {
+            console.error('Error: text is empty after sanitization');
+            process.exitCode = 1;
+            return;
+          }
+
+          const vector = await embeddings.embed(cleanedText);
+
+          // Check for duplicates
+          const existing = await db.search(vector, 1, SIMILARITY_THRESHOLDS.DUPLICATE);
+          if (existing.length > 0) {
+            console.log(`Skipped (duplicate): similar memory already exists: "${existing[0].entry.text.slice(0, 80)}"`);
+            return;
+          }
+
+          const entry = await db.store({ text: cleanedText, vector, category, importance });
+          console.log(`Stored: "${cleanedText.slice(0, 80)}" [${category}] (id: ${entry.id})`);
+        } catch (err) {
+          console.error(`Error: ${err.message}`);
+          process.exitCode = 1;
+        }
+      });
+
+    memory.command('import <file>')
+      .description('Bulk import memories from a JSON array or newline-delimited text file')
+      .option('--dry-run', 'Show what would be stored without actually storing')
+      .action(async (file, opts) => {
+        try {
+          if (!existsSync(file)) {
+            console.error(`Error: file not found: ${file}`);
+            process.exitCode = 1;
+            return;
+          }
+
+          const raw = readFileSync(file, 'utf-8');
+          let entries = [];
+
+          if (file.endsWith('.json')) {
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) {
+              console.error('Error: JSON file must contain an array of objects with { text, category?, importance? }');
+              process.exitCode = 1;
+              return;
+            }
+            entries = parsed.map(item => ({
+              text: typeof item === 'string' ? item : item.text,
+              category: item.category || 'fact',
+              importance: item.importance ?? 0.8
+            }));
+          } else {
+            // Newline-delimited text
+            entries = raw.split('\n')
+              .map(line => line.trim())
+              .filter(line => line.length > 0)
+              .map(line => ({ text: line, category: 'fact', importance: 0.8 }));
+          }
+
+          if (entries.length === 0) {
+            console.log('No entries found in file.');
+            return;
+          }
+
+          let stored = 0, skipped = 0, failed = 0;
+
+          for (const entry of entries) {
+            try {
+              if (!entry.text || typeof entry.text !== 'string') {
+                failed++;
+                continue;
+              }
+
+              if (!MEMORY_CATEGORIES.includes(entry.category)) {
+                entry.category = 'fact';
+              }
+
+              const cleanedText = sanitizeInput(entry.text);
+              if (!cleanedText || cleanedText.length === 0) {
+                failed++;
+                continue;
+              }
+
+              const vector = await embeddings.embed(cleanedText);
+
+              // Check for duplicates
+              const existing = await db.search(vector, 1, SIMILARITY_THRESHOLDS.DUPLICATE);
+              if (existing.length > 0) {
+                if (opts.dryRun) {
+                  console.log(`  SKIP (duplicate): "${cleanedText.slice(0, 60)}"`);
+                }
+                skipped++;
+                continue;
+              }
+
+              if (opts.dryRun) {
+                console.log(`  STORE: "${cleanedText.slice(0, 60)}" [${entry.category}]`);
+              } else {
+                await db.store({ text: cleanedText, vector, category: entry.category, importance: entry.importance });
+              }
+              stored++;
+            } catch (err) {
+              failed++;
+            }
+          }
+
+          const prefix = opts.dryRun ? '[DRY RUN] ' : '';
+          console.log(`\n${prefix}Stored: ${stored} | Skipped: ${skipped} (duplicates) | Failed: ${failed}`);
+        } catch (err) {
+          console.error(`Error: ${err.message}`);
+          process.exitCode = 1;
+        }
+      });
+
+    memory.command('clear')
+      .description('Delete all memories (requires --confirm flag)')
+      .option('--confirm', 'Confirm deletion of all memories')
+      .action(async (opts) => {
+        if (!opts.confirm) {
+          console.log('WARNING: This will permanently delete ALL stored memories.');
+          console.log('Run with --confirm to proceed:');
+          console.log('  openclaw memory-qdrant clear --confirm');
+          return;
+        }
+
+        try {
+          const deleted = await db.clearAll();
+          console.log(`Cleared ${deleted} memories.`);
+        } catch (err) {
+          console.error(`Error: ${err.message}`);
+          process.exitCode = 1;
+        }
+      });
   }, { commands: ['memory-qdrant'] });
 };
 

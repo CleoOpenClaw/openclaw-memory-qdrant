@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-04-13
+
+### Added
+- **CLI `store` command**: Store a single memory from the command line
+  - Supports `--category` and `--importance` flags
+  - Duplicate detection with skip warning
+- **CLI `import` command**: Bulk import memories from JSON or text files
+  - JSON format: array of `{ text, category?, importance? }` objects
+  - Text format: one memory per line (defaults to category "fact")
+  - `--dry-run` flag to preview without storing
+  - Summary output: stored / skipped (duplicates) / failed counts
+- **CLI `clear` command**: Delete all stored memories
+  - Requires `--confirm` flag as safety guard
+- **Enhanced `stats` command**: Now shows storage mode, persist path, and category breakdown
+
+### Changed
+- `MemoryDB` class now exposes `clearAll()` and `getCategoryBreakdown()` methods
+
 ## [1.0.15] - 2026-02-17
 
 ### Added

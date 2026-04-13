@@ -206,6 +206,56 @@ memory_forget({
 })
 ```
 
+## CLI Commands
+
+The plugin registers CLI commands under `memory-qdrant` for managing memories outside agent sessions.
+
+### Search memories
+
+```bash
+openclaw memory-qdrant search "workflow preferences"
+```
+
+### Store a single memory
+
+```bash
+openclaw memory-qdrant store "User prefers TypeScript over JavaScript"
+openclaw memory-qdrant store "Deploy target is AWS eu-west-1" --category decision --importance 0.9
+```
+
+Options:
+- `--category <category>` — one of: fact, preference, decision, entity, other (default: fact)
+- `--importance <number>` — 0.0 to 1.0 (default: 0.8)
+
+### Bulk import memories
+
+```bash
+# From a JSON file (array of { text, category?, importance? })
+openclaw memory-qdrant import seeds.json
+
+# From a text file (one memory per line, category defaults to "fact")
+openclaw memory-qdrant import notes.txt
+
+# Preview without storing
+openclaw memory-qdrant import seeds.json --dry-run
+```
+
+### Clear all memories
+
+```bash
+openclaw memory-qdrant clear --confirm
+```
+
+Requires `--confirm` flag to prevent accidental deletion.
+
+### View statistics
+
+```bash
+openclaw memory-qdrant stats
+```
+
+Shows total count, storage mode, persist path, and category breakdown.
+
 ## Technical Details
 
 ### Architecture

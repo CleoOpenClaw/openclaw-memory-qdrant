@@ -1,6 +1,6 @@
 {
   "name": "openclaw-memory-qdrant-cleo",
-  "version": "1.0.15",
+  "version": "1.1.0",
   "description": "OpenClaw plugin for semantic memory with Qdrant and Transformers.js (Cleo fork)",
   "type": "module",
   "main": "index.js",
