@@ -1,25 +1,25 @@
 {
   "id": "memory-qdrant",
   "kind": "memory",
-  "name": "Memory (Qdrant)",
+  "name": "Memory (Qdrant) - Cleo Fork",
   "version": "1.0.15",
-  "description": "本地语义记忆系统（Qdrant + Transformers.js，完全本地运行）",
+  "description": "Local semantic memory system (Qdrant + Transformers.js, fully local). Forked from zuiho-kai/memory-qdrant.",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
       "qdrantUrl": {
         "type": "string",
-        "description": "Qdrant 服务地址（留空使用内存模式）"
+        "description": "Qdrant server URL (leave empty for in-memory mode)"
       },
       "persistToDisk": {
         "type": "boolean",
         "default": true,
-        "description": "Save memories to disk in memory mode (stored in ~/.openclaw-memory/)"
+        "description": "Save memories to disk in memory mode (stored in ~/.openclaw/workspace/memory/semantic/)"
       },
       "storagePath": {
         "type": "string",
-        "description": "Custom storage path for disk persistence (leave empty for default ~/.openclaw-memory/)"
+        "description": "Custom storage path for disk persistence (leave empty for default ~/.openclaw/workspace/memory/semantic/)"
       },
       "collectionName": {
         "type": "string",
@@ -62,12 +62,12 @@
     },
     "persistToDisk": {
       "label": "Persist to Disk",
-      "help": "Save memories to disk in memory mode. Data will be stored in ~/.openclaw-memory/ and survive restarts. Only applies when Qdrant URL is empty."
+      "help": "Save memories to disk in memory mode. Data will be stored in ~/.openclaw/workspace/memory/semantic/ and survive restarts. Only applies when Qdrant URL is empty."
     },
     "storagePath": {
       "label": "Storage Path",
-      "placeholder": "~/.openclaw-memory/",
-      "help": "Custom directory for storing memories. Leave empty to use default (~/.openclaw-memory/). Only applies when persistToDisk is enabled.",
+      "placeholder": "~/.openclaw/workspace/memory/semantic/",
+      "help": "Custom directory for storing memories. Leave empty to use default (~/.openclaw/workspace/memory/semantic/). Only applies when persistToDisk is enabled.",
       "advanced": true
     },
     "collectionName": {
@@ -77,11 +77,11 @@
     },
     "autoCapture": {
       "label": "Auto Capture",
-      "help": "⚠️ PRIVACY: Auto-save conversation content. Text containing PII (emails, phone numbers) will be skipped unless 'Allow PII Capture' is enabled. Disabled by default for privacy."
+      "help": "PRIVACY: Auto-save conversation content. Text containing PII (emails, phone numbers) will be skipped unless 'Allow PII Capture' is enabled. Disabled by default for privacy."
     },
     "allowPIICapture": {
       "label": "Allow PII Capture",
-      "help": "⚠️ PRIVACY RISK: Allow capturing text with emails/phone numbers when autoCapture is enabled. Only enable if you understand the privacy implications. Requires autoCapture to be enabled.",
+      "help": "PRIVACY RISK: Allow capturing text with emails/phone numbers when autoCapture is enabled. Only enable if you understand the privacy implications. Requires autoCapture to be enabled.",
       "advanced": true
     },
     "autoRecall": {

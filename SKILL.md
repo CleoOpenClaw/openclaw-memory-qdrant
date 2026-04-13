@@ -2,8 +2,8 @@
 name: memory-qdrant
 description: Local semantic memory with Qdrant and Transformers.js. Store, search, and recall conversation context using vector embeddings (fully local, no API keys).
 version: 1.0.15
-author: zuiho-kai
-homepage: https://github.com/zuiho-kai/openclaw-memory-qdrant
+author: CleoOpenClaw
+homepage: https://github.com/CleoOpenClaw/openclaw-memory-qdrant
 tags: [memory, semantic-search, qdrant, transformers, embeddings, local-ai, vector-db, context]
 metadata:
   openclaw:
@@ -13,9 +13,11 @@ metadata:
 
 # memory-qdrant
 
+> Forked from [zuiho-kai/memory-qdrant](https://github.com/zuiho-kai/memory-qdrant). Updated with English localization and revised default storage path.
+
 **Use when** you need your OpenClaw agent to remember and recall information across conversations using semantic search.
 
-⚠️ **Privacy Notice**: The optional `autoCapture` feature (disabled by default) can capture PII like emails and phone numbers if you enable `allowPIICapture`. Only enable if you understand the privacy implications.
+**Privacy Notice**: The optional `autoCapture` feature (disabled by default) can capture PII like emails and phone numbers if you enable `allowPIICapture`. Only enable if you understand the privacy implications.
 
 Local semantic memory plugin powered by Qdrant vector database and Transformers.js embeddings. Zero configuration, fully local, no API keys required.
 
@@ -33,7 +35,7 @@ Local semantic memory plugin powered by Qdrant vector database and Transformers.
 clawhub install memory-qdrant
 ```
 
-**First-time setup:** This plugin downloads a 25MB embedding model from Hugging Face on first run and may require build tools for native dependencies (sharp, onnxruntime). See [README](https://github.com/zuiho-kai/openclaw-memory-qdrant#readme) for detailed installation requirements.
+**First-time setup:** This plugin downloads a 25MB embedding model from Hugging Face on first run and may require build tools for native dependencies (sharp, onnxruntime). See [README](https://github.com/CleoOpenClaw/openclaw-memory-qdrant#readme) for detailed installation requirements.
 
 ## Configuration
 
@@ -50,8 +52,8 @@ Enable in your OpenClaw config:
 ```
 
 **Options:**
-- `persistToDisk` (default: true) - Save memories to disk in memory mode. Data stored in `~/.openclaw-memory/` survives restarts. Set to false for volatile memory.
-- `storagePath` (optional) - Custom storage directory. Leave empty for default `~/.openclaw-memory/`.
+- `persistToDisk` (default: true) - Save memories to disk in memory mode. Data stored in `~/.openclaw/workspace/memory/semantic/` survives restarts. Set to false for volatile memory.
+- `storagePath` (optional) - Custom storage directory. Leave empty for default `~/.openclaw/workspace/memory/semantic/`.
 - `autoCapture` (default: false) - Auto-record conversations. **Privacy protection enabled by default**: text containing PII (emails, phone numbers) is automatically skipped.
 - `allowPIICapture` (default: false) - Allow capturing PII when autoCapture is enabled. **Only enable if you understand the privacy implications.**
 - `autoRecall` (default: true) - Auto-inject relevant memories
@@ -61,7 +63,7 @@ Enable in your OpenClaw config:
 
 Three tools available:
 
-**memory_store** - Save information
+**memory_store** - Save information to long-term memory
 ```javascript
 memory_store({
   text: "User prefers Opus for complex tasks",
@@ -86,7 +88,7 @@ memory_forget({ query: "text to forget" })
 
 ## Privacy & Security
 
-- **Disk persistence** (default): Memories saved to `~/.openclaw-memory/` and survive restarts. Set `persistToDisk: false` for volatile memory.
+- **Disk persistence** (default): Memories saved to `~/.openclaw/workspace/memory/semantic/` and survive restarts. Set `persistToDisk: false` for volatile memory.
 - **In-memory mode**: When `persistToDisk: false`, data cleared on restart
 - **Qdrant mode**: Data sent to configured server (use trusted servers only)
 - **Network**: Downloads ~25MB model from Hugging Face on first run
@@ -101,5 +103,6 @@ memory_forget({ query: "text to forget" })
 
 ## Links
 
-- GitHub: https://github.com/zuiho-kai/openclaw-memory-qdrant
-- Issues: https://github.com/zuiho-kai/openclaw-memory-qdrant/issues
+- GitHub: https://github.com/CleoOpenClaw/openclaw-memory-qdrant
+- Original: https://github.com/zuiho-kai/openclaw-memory-qdrant
+- Issues: https://github.com/CleoOpenClaw/openclaw-memory-qdrant/issues
