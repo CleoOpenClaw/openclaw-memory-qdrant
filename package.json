@@ -4,6 +4,9 @@
   "description": "OpenClaw plugin for semantic memory with Qdrant and Transformers.js (Cleo fork)",
   "type": "module",
   "main": "index.js",
+  "openclaw": {
+    "extensions": ["./index.js"]
+  },
   "keywords": [
     "openclaw",
     "plugin",
