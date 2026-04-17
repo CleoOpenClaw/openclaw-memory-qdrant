@@ -353,6 +353,10 @@ const MEMORY_TRIGGERS = [
   /my \w+ is|is my/i,
   /i (like|prefer|hate|love|want|need)/i,
   /always|never|important/i,
+  /\b(is|are|was|were)\b.{5,}/i,                          // factual statements
+  /\b(we|i|kale|cleo)\b.+(today|yesterday|now|currently)/i, // temporal context
+  /\b(plan|goal|working on|building|using|switched|changed|updated)\b/i,
+  /\b(because|reason|why|so that)\b/i,                    // reasoning/decisions
 ];
 
 // PII detection patterns (for warnings, not for auto-capture)
@@ -364,12 +368,11 @@ const PII_PATTERNS = [
 function shouldCapture(text, maxChars = DEFAULT_CAPTURE_MAX_CHARS) {
   if (!text || typeof text !== 'string') return false;
 
-  const minLength = 10;
+  const minLength = 20;
 
   if (text.length < minLength || text.length > maxChars) return false;
   if (text.includes('<relevant-memories>')) return false;
   if (text.startsWith('<') && text.includes('</')) return false;
-  if (text.includes('**') && text.includes('\n-')) return false;
 
   const emojiCount = (text.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
   if (emojiCount > 3) return false;
